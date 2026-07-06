@@ -1,0 +1,69 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "aphmau-updates",
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/on-app-install"
+  },
+  "scheduler": {
+    "tasks": {
+      "check-video-post": {
+        "endpoint": "/internal/cron/check-video-post",
+        "cron": "*/30 * * * *"
+      },
+      "check-community-post": {
+        "endpoint": "/internal/cron/check-community-post",
+        "cron": "15,45 * * * *"
+      }
+    }
+  },
+  "settings": {
+    "global": {
+      "discordBotToken": {
+        "type": "string",
+        "label": "Discord Bot Token",
+        "helpText": "Token of your Discord Bot, used to fetch feed channel messages. Set with: devvit settings set discordBotToken \"your-bot-token\"",
+        "isSecret": true
+      },
+      "videoChannelId": {
+        "type": "string",
+        "label": "Discord Video Feed Channel ID",
+        "helpText": "The ID of the Discord text channel holding video feed JSONs. Set with: devvit settings set videoChannelId \"channel-id\"",
+        "isSecret": true
+      },
+      "communityChannelId": {
+        "type": "string",
+        "label": "Discord Community Feed Channel ID",
+        "helpText": "The ID of the Discord text channel holding community feed JSONs. Set with: devvit settings set communityChannelId \"channel-id\"",
+        "isSecret": true
+      },
+      "discordWebhook": {
+        "type": "string",
+        "label": "Discord Webhook URL",
+        "helpText": "Discord webhook URL to post success notifications. Set with: devvit settings set discordWebhook \"https://discord.com/api/...\"",
+        "isSecret": true
+      }
+    }
+  },
+  "permissions": {
+    "reddit": true,
+    "redis": true,
+    "media": true,
+    "http": {
+      "enable": true,
+      "domains": [
+        "discord.com"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dev": {
+    "subreddit": "aphmau_updates_dev"
+  }
+}
