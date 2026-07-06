@@ -286,6 +286,8 @@ export async function runCommunityCheck() {
     const authorName = item.author || 'Aphmau';
     const redditTitle = `New Community Post from ${authorName} - ${dateString}`;
 
+    const bodyText = item.body || '';
+
     const subredditName = (await redis.get('installed_subreddit')) || 'aphmaufandom';
     console.log(`[community-cron] Posting new community post to r/${subredditName}: "${redditTitle}" (${item.id})`);
 
@@ -331,11 +333,11 @@ export async function runCommunityCheck() {
       let lastIndex = 0;
       let match;
 
-      while ((match = markdownLinkRegex.exec(item.body)) !== null) {
+      while ((match = markdownLinkRegex.exec(bodyText)) !== null) {
         if (match.index > lastIndex) {
           paragraphContent.push({
             e: 'text',
-            t: item.body.substring(lastIndex, match.index),
+            t: bodyText.substring(lastIndex, match.index),
           });
         }
         paragraphContent.push({
@@ -346,10 +348,10 @@ export async function runCommunityCheck() {
         lastIndex = markdownLinkRegex.lastIndex;
       }
 
-      if (lastIndex < item.body.length) {
+      if (lastIndex < bodyText.length) {
         paragraphContent.push({
           e: 'text',
-          t: item.body.substring(lastIndex),
+          t: bodyText.substring(lastIndex),
         });
       }
 
@@ -357,14 +359,33 @@ export async function runCommunityCheck() {
         paragraphContent.push({ e: 'text', t: '' });
       }
 
-      const richTextObject = {
-        document: [
+      const documentContent = [
+        {
+          e: 'par',
+          c: paragraphContent,
+        },
+        ...imageBlocks,
+      ];
+
+      // Add horizontal rule and View Original Post link to rich text matching original n8n flow
+      if (item.id && item.id.startsWith('http')) {
+        documentContent.push(
+          { e: 'hr' } as any,
           {
             e: 'par',
-            c: paragraphContent,
-          },
-          ...imageBlocks,
-        ],
+            c: [
+              {
+                e: 'link',
+                u: item.id,
+                t: 'View Original Post on YouTube',
+              },
+            ],
+          } as any
+        );
+      }
+
+      const richTextObject = {
+        document: documentContent,
       };
 
       post = await reddit.submitPost({
@@ -373,11 +394,16 @@ export async function runCommunityCheck() {
         richtext: richTextObject,
       });
     } else {
-      // Text / self post
+      // Text / self post matching original n8n flow
+      let textContent = bodyText;
+      if (item.id && item.id.startsWith('http')) {
+        textContent += `\n\n---\n\n[View Original Post on YouTube](${item.id})`;
+      }
+
       post = await reddit.submitPost({
         subredditName,
         title: redditTitle,
-        text: item.body,
+        text: textContent,
       });
     }
 
